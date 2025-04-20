@@ -13,8 +13,8 @@ env.set('LINUX_OBJ', kbuild_dir)
 env.set('LINUX_SRC', join_paths(meson.project_source_root(), './linux'))
 env.set('CARGO_TARGET_DIR', join_paths(build_dir, 'target'))
 
-syscall_tp_clippy = custom_target(
-  'syscall_tp-clippy',
+sample_clippy = custom_target(
+  'electrode-clippy',
   output: ['target'],
   command: [
     cargo_wrapper, rust_bin, '-Z',
@@ -27,9 +27,9 @@ syscall_tp_clippy = custom_target(
   build_by_default: true
 )
 
-syscall_tp_build = custom_target(
-  'syscall_tp-build',
-  output: ['syscall_tp-rex'],
+sample_build = custom_target(
+  'electrode-build',
+  output: ['electrode'],
   command: [
     cargo_wrapper, rust_bin, '-Z',
     'unstable-options',
@@ -43,38 +43,10 @@ syscall_tp_build = custom_target(
   build_by_default: true
 )
 
-syscall_tp_loader = executable(
-  'syscall_tp',
-  'syscall_tp_user.c',
+executable(
+  'entry',
+  'entry.c',
   build_by_default: true,
   dependencies: [librex_dep, libbpf_dep, kernel_dep],
   pie: true
-)
-
-
-sanity_test = custom_target(
-  'sanity_test',
-  output: ['runtest.py'],
-  input: join_paths(meson.current_source_dir(), 'tests/runtest.py'),
-  command: [
-    'cp', '@INPUT@', '@OUTPUT@',
-    ]
- )
-
-runtest_deps += [syscall_tp_build, syscall_tp_loader, sanity_test]
-
-sanity_test_env = environment()
-sanity_test_env.set('SAMPLE_PATH', meson.current_build_dir())
-sanity_test_env.set('Q_SCRIPT',
-  join_paths(meson.project_source_root(), 'scripts/q-script/sanity-test-q')
-)
-sanity_test_env.set('KERNEL_PATH', kbuild_dir)
-
-test('syscall_tp',
-  python3_bin,
-  args: [sanity_test_scripts],
-  env: sanity_test_env,
-  depends: runtest_deps,
-  is_parallel: false,
-  workdir: meson.current_build_dir()
 )
